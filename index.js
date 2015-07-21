@@ -69,7 +69,7 @@ MemcachedCache.prototype.add = function(key, value, ttl, callback) {
     var self = this;
     callback = callback || function() {};
     try {
-        var memcached = new Memcached(self.options.host + ':' + self.options.port);
+        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
         addInternal.call(self, memcached, key, value, ttl, function(err, result) {
                 memcached.end();
                if (err) {
@@ -99,7 +99,7 @@ MemcachedCache.prototype.remove = function(key, callback) {
         if (typeof key === 'undefined' || key == null) {
             return callback(new Error('Invalid key. Expected string.'));
         }
-        var memcached = new Memcached(self.options.host + ':' + self.options.port);
+        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
         memcached.del(key, function(err, result) {
             //close connection
             memcached.end();
@@ -125,7 +125,7 @@ MemcachedCache.prototype.flush = function(callback) {
     var self = this;
     callback = callback || function() {};
     try {
-        var memcached = new Memcached(self.options.host + ':' + self.options.port);
+        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
         memcached.flush(function(err) {
             memcached.end();
             if (err) {
@@ -149,7 +149,7 @@ MemcachedCache.prototype.get = function(key, callback) {
     var self = this;
     callback = callback || function() {};
     try {
-        var memcached = new Memcached(self.options.host + ':' + self.options.port);
+        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
         getInternal.call(this, memcached, key, function(err, result) {
             //close connection
             memcached.end();
@@ -227,6 +227,13 @@ function addInternal(thisCache, key, value, ttl, callback) {
         callback(e);
     }
 }
+/**
+ * @private
+ * @return {Memcached}
+ */
+MemcachedCache.prototype.raw = function() {
+    return new Memcached(this.options.host + ':' + this.options.port, this.options);
+}
 
 /**
  * Retrieves stats items information.
@@ -235,7 +242,7 @@ function addInternal(thisCache, key, value, ttl, callback) {
 MemcachedCache.prototype.items = function(callback) {
     var self = this;
     try {
-        var memcached = new Memcached(self.options.host + ':' + self.options.port);
+        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
         memcached.items(function(err, result) {
             memcached.end();
             callback(err, result);
@@ -260,7 +267,7 @@ MemcachedCache.prototype.ensure = function(key, fn, callback) {
             callback(new Error('Invalid argument. Expected function.'));
             return;
         }
-        var memcached = new Memcached(self.options.host + ':' + self.options.port);
+        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
         getInternal.call(this, memcached, key, function(err, result) {
             if (err) {
                 memcached.end();
