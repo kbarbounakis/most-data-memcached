@@ -21,7 +21,11 @@
   },
   "homepage": "https://github.com/kbarbounakis/most-data-memcached",
   "dependencies": {
+    "bson": "^0.4.8",
     "memcached": "^2.1.0",
     "winston": "^1.0.1"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.5"
   }
 }
