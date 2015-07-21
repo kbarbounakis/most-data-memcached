@@ -4,6 +4,12 @@
 var cache = require("./../index"), winston = require("winston");
 describe('Most Data Memcached General Test', function() {
     var gcache = cache.create();
+    it('should get cache items', function(done) {
+        gcache.items(function(err, result) {
+            winston.log('info', result);
+            done(err);
+        });
+    });
     it('should cache string', function(done) {
         gcache.add('/message', "Hello World" , 20, function(err) {
             done(err);

@@ -229,6 +229,24 @@ function addInternal(thisCache, key, value, ttl, callback) {
 }
 
 /**
+ * Retrieves stats items information.
+ * @param {function(Error=,*=)} callback - A callback function that will return the result or an error, if any.
+ */
+MemcachedCache.prototype.items = function(callback) {
+    var self = this;
+    try {
+        var memcached = new Memcached(self.options.host + ':' + self.options.port);
+        memcached.items(function(err, result) {
+            memcached.end();
+            callback(err, result);
+        });
+    }
+    catch(e) {
+        callback(e);
+    }
+};
+
+/**
  * Gets data from cache or executes the defined function and adds the result to the cache with the specified key
  * @param {string|*} key - A string thath represents the of the cached data
  * @param {function(function(Error=,*=))} fn - A function to execute if data will not be found in cache
