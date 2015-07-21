@@ -34,11 +34,11 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-var util = require('util');
+var util = require("util"), Memcached = require("memcached"), winston  = require("winston");
 /**
  * Implements the cache for a data application.
  * @class MemcachedCache
- * @param {{host:string,port:number}} options
+ * @param {{host:string,port:number,maxKeySize:number,poolSize:number,timeout:number,remove:boolean,ttl:number}|*} options
  * @constructor
  * @augments EventEmitter2
  */
@@ -46,20 +46,10 @@ function MemcachedCache(options) {
     options = options || {};
     options.host = options.host || '127.0.0.1';
     options.port = options.port || 11211;
+    options.ttl = options.ttl || (20*60);
+    this.options = options;
 }
 
-/**
- * Sets a key value pair in cache.
- * @param {string} key - A string that represents the key of the cached value
- * @param {*} value - The value to be cached
- * @param {number=} ttl - A TTL in seconds. This parameter is optional.
- * @param {function(Error=,boolean=)} callback - Returns true on success. This parameter is optional.
- */
-MemcachedCache.prototype.add = function(key, value, ttl, callback) {
-    var self = this;
-    callback = callback || function() {};
-    callback();
-};
 
 /**
  * Sets a key value pair in cache.
@@ -71,7 +61,25 @@ MemcachedCache.prototype.add = function(key, value, ttl, callback) {
 MemcachedCache.prototype.add = function(key, value, ttl, callback) {
     var self = this;
     callback = callback || function() {};
-    callback();
+    if (typeof key === 'undefined' || key == null) {
+        return callback(new Error('Invalid key. Expected string.'));
+    }
+    try {
+        var memcached = new Memcached(options.host + ':' + options.port);
+        memcached.set(key, (typeof value === 'undefined' ? null : value), (ttl || options.ttl), function(err) {
+            //close connection
+            memcached.end();
+            //if an error occured
+            if (err) {
+                return callback(err);
+            }
+            //otherwise return true
+            callback(null, true);
+        });
+    }
+    catch(e) {
+        callback(e);
+    }
 };
 
 /**
@@ -82,18 +90,49 @@ MemcachedCache.prototype.add = function(key, value, ttl, callback) {
 MemcachedCache.prototype.remove = function(key, callback) {
     var self = this;
     callback = callback || function() {};
-    callback();
+    try {
+        if (typeof key === 'undefined' || key == null) {
+            return callback(new Error('Invalid key. Expected string.'));
+        }
+        var memcached = new Memcached(options.host + ':' + options.port);
+        memcached.del(key, function(err, result) {
+            //close connection
+            memcached.end();
+            //if an error occured
+            if (err) {
+                winston.log('debug', util.format('An error occured while trying to delete cache key [%s].', key));
+                winston.log('error', err);
+            }
+            //otherwise return true
+            callback(null, (typeof result === 'undefined') ? 0 : 1);
+        });
+    }
+    catch(e) {
+        callback(e);
+    }
 };
 
 /**
- * Removes a cached value.
- * @param {string} key - A string that represents the key of the cached value
+ * Flushes the underlying cache.
  * @param {function(Error=,number=)} callback - Returns the number of deleted entries. This parameter is optional.
  */
 MemcachedCache.prototype.flush = function(callback) {
     var self = this;
     callback = callback || function() {};
-    callback();
+    try {
+        var memcached = new Memcached(options.host + ':' + options.port);
+        memcached.flush(function(err) {
+            memcached.end();
+            if (err) {
+                winston.log('debug', util.format('An error occured while trying to delete cache key [%s].', key));
+                winston.log('error', err);
+            }
+            callback();
+        });
+    }
+    catch(e) {
+        callback(e);
+    }
 };
 
 /**
@@ -104,10 +143,26 @@ MemcachedCache.prototype.flush = function(callback) {
 MemcachedCache.prototype.get = function(key, callback) {
     var self = this;
     callback = callback || function() {};
-    if (typeof key === 'undefined' || key == null) {
-        callback();
+    try {
+        if (typeof key === 'undefined' || key == null) {
+            return callback(new Error('Invalid key. Expected string.'));
+        }
+        var memcached = new Memcached(options.host + ':' + options.port);
+        memcached.get(key, function(err, result) {
+            //close connection
+            memcached.end();
+            //if an error occured
+            if (err) {
+                winston.log('debug', util.format('An error occured while trying to get cache key [%s].', key));
+                winston.log('error', err);
+            }
+            //otherwise return true
+            callback(null, result);
+        });
     }
-    callback();
+    catch(e) {
+        callback(e);
+    }
 };
 
 /**
@@ -133,7 +188,7 @@ MemcachedCache.prototype.ensure = function(key, fn, callback) {
             //execute fn
             fn(function(err, result) {
                 if (err) { callback(err); return; }
-                self.add(key, (typeof result === 'undefined') ? null: result, self.ttl, function() {
+                self.add(key, (typeof result === 'undefined') ? null: result, self.options.ttl, function() {
                     callback(null, result);
                 });
             });
