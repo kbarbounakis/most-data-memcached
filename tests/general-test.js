@@ -17,6 +17,8 @@ describe('Most Data Memcached General Test', function() {
     });
     it('should cache item', function(done) {
         var value = { name:'Anonymous',description:'Anonymous User', dateCreated: new Date(), enabled:true };
+        var s = JSON.stringify(value);
+        var v1 = JSON.parse(s, JSON.dateParse);
         gcache.add('/User/100', value , 20, function(err, result) {
             done(err);
         });

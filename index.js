@@ -39,6 +39,9 @@ var util = require("util"),
     winston  = require("winston"),
     bson = require("bson"),
     BSON = new bson.BSONPure.BSON();
+
+
+
 /**
  * Implements the cache for a data application.
  * @class MemcachedCache
@@ -182,15 +185,7 @@ function getInternal(thisCache, key, callback) {
             if (err) {
                 return callback(err);
             }
-            if (typeof result === 'undefined' || result == null) {
-                return callback(null, result);
-            }
-            else if (Buffer.isBuffer(result)) {
-                callback(null, BSON.deserialize(result));
-            }
-            else {
-                callback(null, result);
-            }
+            callback(null, result);
         });
     }
     catch(e) {
@@ -215,14 +210,8 @@ function addInternal(thisCache, key, value, ttl, callback) {
     }
     try {
         var setValue;
-        if (Buffer.isBuffer(value)) {
-            callback(new Error('Unsupported value type. Buffer object is not yet implemented.'))
-        }
         if (typeof value === 'undefined' || value == null)
             setValue = null;
-        else if (typeof value === 'object')
-        //serialize to buffer
-            setValue = BSON.serialize(value, false, true, false);
         else
             setValue = value;
         thisCache.set(key, setValue, (ttl || self.options.ttl), function(err) {

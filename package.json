@@ -22,7 +22,7 @@
   "homepage": "https://github.com/kbarbounakis/most-data-memcached",
   "dependencies": {
     "bson": "^0.4.8",
-    "memcached": "^2.1.0",
+    "memcached": "git://github.com/kbarbounakis/memcached.git",
     "winston": "^1.0.1"
   },
   "devDependencies": {
