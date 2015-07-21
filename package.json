@@ -1,0 +1,26 @@
+{
+  "name": "most-data-memcached",
+  "version": "1.0.0",
+  "description": "MOST Web Framework Memcached Adapter",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kbarbounakis/most-data-memcached.git"
+  },
+  "keywords": [
+    "most",
+    "web",
+    "data",
+    "cached",
+    "memcached"
+  ],
+  "author": "Kyriakos Barbounakis <k.barbounakis@gmail.com>",
+  "license": "BSD3-Clause",
+  "bugs": {
+    "url": "https://github.com/kbarbounakis/most-data-memcached/issues"
+  },
+  "homepage": "https://github.com/kbarbounakis/most-data-memcached",
+  "dependencies": {
+    "memcached": "^2.1.0"
+  }
+}
