@@ -1,6 +1,6 @@
 {
   "name": "most-data-memcached",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MOST Web Framework Memcached Adapter",
   "main": "index.js",
   "repository": {
