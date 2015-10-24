@@ -281,7 +281,7 @@ MemcachedCache.prototype.ensure = function(key, fn, callback) {
             }
             fn(function(err, result) {
                 if (err) { memcached.end(); return callback(err); }
-                addInternal.call(self, memcached, key, result, self.options.ttl, function(err, result) {
+                addInternal.call(self, memcached, key, result, self.options.ttl, function(err, res) {
                     //close connection
                     memcached.end();
                     //if an error occured
