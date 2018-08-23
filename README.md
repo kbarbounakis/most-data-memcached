@@ -1,13 +1,13 @@
 ## Most Web Framework Data Caching Service with Memcached
 
 @themost/memcached implements the usage of [Memcached](https://memcached.org/) 
-as backend for caching data inside Most Web Framework applications.
+as backend for caching data inside [Most Web Framework](https://github.com/themost-framework/themost) applications.
 
-##### Installation
+### Installation
 
     npm install @themost/memcached
 
-#### Configuration
+### Configuration
 
 Add settings/memcached section in your application configuration file (config/app.json)
 
