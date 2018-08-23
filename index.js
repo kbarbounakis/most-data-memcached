@@ -1,221 +1,68 @@
 /**
- * MOST Web Framework
- * A JavaScript Web Framework
- * http://themost.io
+ * @license
+ * MOST Web Framework 2.0 Codename Blueshift
+ * Copyright (c) 2017, THEMOST LP All rights reserved
  *
- * Copyright (c) 2014, Kyriakos Barbounakis k.barbounakis@gmail.com, Anthi Oikonomou anthioikonomou@gmail.com
- *
- * Released under the BSD3-Clause license
- * Date: 2014-11-27
-
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
-
- * Redistributions of source code must retain the above copyright notice, this
- list of conditions and the following disclaimer.
-
- * Redistributions in binary form must reproduce the above copyright notice,
- this list of conditions and the following disclaimer in the documentation
- and/or other materials provided with the distribution.
-
- * Neither the name of most-query nor the names of its
- contributors may be used to endorse or promote products derived from
- this software without specific prior written permission.
-
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * Use of this source code is governed by an BSD-3-Clause license that can be
+ * found in the LICENSE file at https://themost.io/license
  */
-var util = require("util"),
-    Memcached = require("memcached"),
-    winston  = require("winston"),
-    bson = require("bson"),
-    BSON = new bson.BSONPure.BSON();
-
+///
+const Memcached = require("memcached");
+const Args = require('@themost/common').Args;
+const TraceUtils = require('@themost/common').TraceUtils;
+const ConfigurationStrategy = require('@themost/common').ConfigurationStrategy;
 
 
 /**
- * Implements the cache for a data application.
- * @class MemcachedCache
- * @param {{host:string,port:number,maxKeySize:number,poolSize:number,timeout:number,remove:boolean,ttl:number}|*} options
- * @constructor
- * @augments EventEmitter2
- */
-function MemcachedCache(options) {
-    options = options || {};
-    options.host = options.host || '127.0.0.1';
-    options.port = options.port || 11211;
-    options.ttl = options.ttl || (20*60);
-    this.options = options;
-}
-
-
-/**
- * Sets a key value pair in cache.
- * @param {string} key - A string that represents the key of the cached value
- * @param {*} value - The value to be cached
- * @param {number=} ttl - A TTL in seconds. This parameter is optional.
- * @param {function(Error=,boolean=)} callback - Returns true on success. This parameter is optional.
- */
-MemcachedCache.prototype.add = function(key, value, ttl, callback) {
-    var self = this;
-    callback = callback || function() {};
-    try {
-        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
-        addInternal.call(self, memcached, key, value, ttl, function(err, result) {
-                memcached.end();
-               if (err) {
-                   winston.log('debug', util.format('An error occured while trying to add cache item (%s).', key));
-                   winston.log('error', err);
-                   return callback(err);
-               }
-                else {
-                   callback(null, result);
-               }
-        });
-    }
-    catch(e) {
-        callback(e);
-    }
-};
-
-/**
- * Removes a cached value.
- * @param {string} key - A string that represents the key of the cached value
- * @param {function(Error=,number=)} callback - Returns the number of deleted entries. This parameter is optional.
- */
-MemcachedCache.prototype.remove = function(key, callback) {
-    var self = this;
-    callback = callback || function() {};
-    try {
-        if (typeof key === 'undefined' || key == null) {
-            return callback(new Error('Invalid key. Expected string.'));
-        }
-        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
-        memcached.del(key, function(err, result) {
-            //close connection
-            memcached.end();
-            //if an error occured
-            if (err) {
-                winston.log('debug', util.format('An error occured while trying to delete cache item (%s).', key));
-                winston.log('error', err);
-            }
-            //otherwise return true
-            callback(null, (typeof result === 'undefined') ? 0 : 1);
-        });
-    }
-    catch(e) {
-        callback(e);
-    }
-};
-
-/**
- * Flushes the underlying cache.
- * @param {function(Error=,number=)} callback - Returns the number of deleted entries. This parameter is optional.
- */
-MemcachedCache.prototype.flush = function(callback) {
-    var self = this;
-    callback = callback || function() {};
-    try {
-        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
-        memcached.flush(function(err) {
-            memcached.end();
-            if (err) {
-                winston.log('An error occured while trying to flush cache.');
-                winston.log('error', err);
-            }
-            callback();
-        });
-    }
-    catch(e) {
-        callback(e);
-    }
-};
-
-/**
- * Gets a cached value defined by the given key.
- * @param {string|*} key
- * @param {function(Error=,*=)} callback - A callback that returns the cached value, if any.
- */
-MemcachedCache.prototype.get = function(key, callback) {
-    var self = this;
-    callback = callback || function() {};
-    try {
-        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
-        getInternal.call(this, memcached, key, function(err, result) {
-            //close connection
-            memcached.end();
-            if (err) {
-                winston.log('debug', util.format('An error occured while trying to get cache item (%s).', key));
-                winston.log('error', err);
-                return callback(err);
-            }
-            //return result
-            callback(null, result);
-        });
-    }
-    catch(e) {
-        callback(e);
-    }
-};
-/**
+ * @this MemcachedCache
  * @private
  * Gets a cached value defined by the given key.
  * @param {Memcached|*} thisCache
  * @param {string|*} key
- * @param {function(Error=,*=)} callback - A callback that returns the cached value, if any.
+ * @param {Function} callback - A callback that returns the cached value, if any.
  */
 function getInternal(thisCache, key, callback) {
-    var self = this;
     callback = callback || function() {};
     try {
         if (typeof key === 'undefined' || key == null) {
             return callback(new Error('Invalid key. Expected string.'));
         }
-        thisCache.get(key, function(err, result) {
-            //if an error occured
+        thisCache.get(key, (err, result) => {
+            //if an error occurred
             if (err) {
                 return callback(err);
             }
             callback(null, result);
         });
     }
-    catch(e) {
-        callback(e);
+    catch(err) {
+        callback(err);
     }
-};
+}
 
 /**
+ * @this MemcachedCache
  * @private
  * Sets a key value pair in cache.
  * @param {Memcached|*} thisCache
  * @param {string} key - A string that represents the key of the cached value
  * @param {*} value - The value to be cached
  * @param {number=} ttl - A TTL in seconds. This parameter is optional.
- * @param {function(Error=,boolean=)} callback - Returns true on success. This parameter is optional.
+ * @param {Function=} callback - Returns true on success. This parameter is optional.
  */
 function addInternal(thisCache, key, value, ttl, callback) {
-    var self = this;
     callback = callback || function() {};
     if (typeof key === 'undefined' || key == null) {
         return callback(new Error('Invalid key. Expected string.'));
     }
     try {
-        var setValue;
+        let setValue;
         if (typeof value === 'undefined' || value == null)
             setValue = null;
         else
             setValue = value;
-        thisCache.set(key, setValue, (ttl || self.options.ttl), function(err) {
-            //if an error occured
+        thisCache.set(key, setValue, (ttl || this.options.ttl), (err) => {
+            //if an error occurred
             if (err) {
                 return callback(err);
             }
@@ -223,96 +70,349 @@ function addInternal(thisCache, key, value, ttl, callback) {
             callback(null, true);
         });
     }
-    catch(e) {
-        callback(e);
+    catch(err) {
+        callback(err);
     }
-}
-/**
- * @private
- * @return {Memcached}
- */
-MemcachedCache.prototype.raw = function() {
-    return new Memcached(this.options.host + ':' + this.options.port, this.options);
 }
 
 /**
- * Retrieves stats items information.
- * @param {function(Error=,*=)} callback - A callback function that will return the result or an error, if any.
+ * Implements the cache for a data application.
+ * @class
+ * @deprecated
  */
-MemcachedCache.prototype.items = function(callback) {
-    var self = this;
-    try {
-        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
-        memcached.items(function(err, result) {
-            memcached.end();
-            callback(err, result);
-        });
+class MemcachedCache {
+    /**
+     *
+     * @param {MemcachedOptions} options
+     */
+    constructor(options) {
+        this.options = Object.assign({
+            host: "127.0.0.1",
+            port: 11211,
+            ttl: 1200
+        }, options);
     }
-    catch(e) {
-        callback(e);
-    }
-};
 
-/**
- * Gets data from cache or executes the defined function and adds the result to the cache with the specified key
- * @param {string|*} key - A string thath represents the of the cached data
- * @param {function(function(Error=,*=))} fn - A function to execute if data will not be found in cache
- * @param {function(Error=,*=)} callback - A callback function that will return the result or an error, if any.
- */
-MemcachedCache.prototype.ensure = function(key, fn, callback) {
-    var self = this;
-    callback = callback || function() {};
-    try {
-        if (typeof fn !== 'function') {
-            callback(new Error('Invalid argument. Expected function.'));
-            return;
+    /**
+     * Sets a key value pair in cache.
+     * @param {string} key - A string that represents the key of the cached value
+     * @param {*} value - The value to be cached
+     * @param {number=} ttl - A TTL in seconds. This parameter is optional.
+     * @param {Function=} callback - Returns true on success. This parameter is optional.
+     */
+    add(key, value, ttl, callback) {
+        callback = callback || function() {};
+        try {
+            let memcached = new Memcached(this.options.host + ':' + this.options.port, this.options);
+            addInternal.bind(this)(memcached, key, value, ttl, (err, result) => {
+                memcached.end();
+                if (err) {
+                    return callback(err);
+                }
+                else {
+                    return callback(null, result);
+                }
+            });
         }
-        var memcached = new Memcached(self.options.host + ':' + self.options.port, this.options);
-        getInternal.call(this, memcached, key, function(err, result) {
-            if (err) {
-                memcached.end();
-                winston.log('debug', util.format('An error occured while trying to ensure cache item (%s).', key));
-                winston.log('error', err);
-                return callback(err);
+        catch(err) {
+            callback(err);
+        }
+    }
+
+    /**
+     * Removes a cached value.
+     * @param {string} key - A string that represents the key of the cached value
+     * @param {Function} callback - Returns the number of deleted entries. This parameter is optional.
+     */
+    remove(key, callback) {
+        callback = callback || function() {};
+        try {
+            if (typeof key === 'undefined' || key == null) {
+                return callback(new Error('Invalid key. Expected string.'));
             }
-            if (typeof result !== 'undefined') {
+            let memcached = new Memcached(this.options.host + ':' + this.options.port, this.options);
+            memcached.del(key, (err, result) => {
+                //close connection
                 memcached.end();
+                //if an error occurred
+                if (err) {
+                    TraceUtils.error('An error occurred while trying to delete cache item [' + key + '].');
+                    TraceUtils.error(err);
+                }
+                //otherwise return true
+                return callback(null, (typeof result === 'undefined') ? 0 : 1);
+            });
+        }
+        catch(err) {
+            return callback(err);
+        }
+    }
+
+    /**
+     * Flushes the underlying cache.
+     * @param {Function} callback - Returns the number of deleted entries. This parameter is optional.
+     */
+    flush(callback) {
+       callback = callback || function() {};
+        try {
+            let memcached = new Memcached(this.options.host + ':' + this.options.port, this.options);
+            memcached.flush((err) => {
+                memcached.end();
+                if (err) {
+                    TraceUtils.error('An error occurred while trying to flush cache.');
+                    TraceUtils.error(err);
+                }
+                return callback();
+            });
+        }
+        catch(err) {
+            callback(err);
+        }
+    }
+    /**
+     * Gets a cached value defined by the given key.
+     * @param {string|*} key
+     * @param {Function} callback - A callback that returns the cached value, if any.
+     */
+    get(key, callback) {
+         callback = callback || function() {};
+        try {
+            let memcached = new Memcached(this.options.host + ':' + this.options.port, this.options);
+            getInternal.call(this, memcached, key, (err, result) => {
+                //close connection
+                memcached.end();
+                if (err) {
+                    return callback(err);
+                }
+                //return result
                 return callback(null, result);
+            });
+        }
+        catch(err) {
+            return callback(err);
+        }
+    }
+
+
+    /**
+     * Retrieves stats items information.
+     * @param {Function} callback - A callback function that will return the result or an error, if any.
+     */
+    items(callback) {
+        try {
+            let memcached = new Memcached(this.options.host + ':' + this.options.port, this.options);
+            memcached.items(function(err, result) {
+                memcached.end();
+                return callback(err, result);
+            });
+        }
+        catch(err) {
+            callback(err);
+        }
+    }
+
+
+    /**
+     * Gets data from cache or executes the defined function and adds the result to the cache with the specified key
+     * @param {string|*} key - A string which represents the of the cached data
+     * @param {Function} fn - A function to execute if data will not be found in cache
+     * @param {Function} callback - A callback function that will return the result or an error, if any.
+     */
+    ensure(key, fn, callback) {
+        callback = callback || function() {};
+        try {
+            if (typeof fn !== 'function') {
+                callback(new Error('Invalid argument. Expected function.'));
+                return;
             }
-            fn(function(err, result) {
-                if (err) { memcached.end(); return callback(err); }
-                addInternal.call(self, memcached, key, result, self.options.ttl, function(err, res) {
-                    //close connection
+            let memcached = new Memcached(this.options.host + ':' + this.options.port, this.options);
+            getInternal.bind(this)(memcached, key, (err, result) => {
+                if (err) {
                     memcached.end();
-                    //if an error occured
+                    return callback(err);
+                }
+                else if (typeof result !== 'undefined') {
+                    memcached.end();
+                    return callback(null, result);
+                }
+                fn((err, result) => {
                     if (err) {
+                        memcached.end();
                         return callback(err);
                     }
-                    //otherwise return the result
-                    callback(null, result);
+                    addInternal.bind(this)(memcached, key, result, this.options.ttl, (err) => {
+                        //close connection
+                        memcached.end();
+                        //if an error occurred
+                        if (err) {
+                            return callback(err);
+                        }
+                        //otherwise return the result
+                        callback(null, result);
+                    });
+                });
+            });
+        }
+        catch(err) {
+            callback(err);
+        }
+    }
+
+}
+
+
+
+/**
+ * @class
+ */
+class MemcachedCacheStrategy extends ConfigurationStrategy {
+    /**
+     *
+     * @param {ConfigurationBase} config
+     */
+    constructor(config) {
+        super(config);
+        this.options = Object.assign({
+            host: "127.0.0.1",
+            port: 11211,
+            ttl: 1200
+        }, this.getConfiguration().getSourceAt('settings/memcached'));
+    }
+
+    /**
+     * Sets a key value pair in cache.
+     * @param {string} key - A string that represents the key of the cached value
+     * @param {*} value - The value to be cached
+     * @param {number=} absoluteExpiration - An absolute expiration time in seconds. This parameter is optional.
+     * @returns {Promise|*}
+     */
+    add(key, value, absoluteExpiration) {
+        return new Promise((resolve, reject) => {
+            this.open((err, cache) => {
+                cache.set(key, value, absoluteExpiration || this.options.ttl, (err, res) => {
+                    cache.end();
+                    if (err) {
+                        return reject(err);
+                    }
+                    return resolve(res);
                 });
             });
         });
     }
-    catch(e) {
-        callback(e);
+
+    /**
+     * This callback is displayed as a global member.
+     * @callback MemcachedConnectionCallback
+     * @param {Error=} err
+     * @param {Memcached=} cache
+     */
+
+    /**
+     * Opens a new memcached connection
+     * @private
+     * @param {MemcachedConnectionCallback} callback
+     */
+    open(callback) {
+        try {
+            let conn = new Memcached(this.options.host + ':' + this.options.port, this.options);
+            return callback(null, conn);
+        }
+        catch(err) {
+            return callback(err);
+        }
     }
-};
+
+
+    /**
+     * Gets the value for the given key.
+     * @param {string} key
+     * @returns {Promise|*}
+     */
+    get(key) {
+        return new Promise((resolve, reject) => {
+            this.open((err, cache) => {
+                cache.get(key, (err, res) => {
+                    cache.end();
+                    if (err) {
+                        return reject(err);
+                    }
+                    return resolve(res);
+                });
+            });
+        });
+    };
+
+    /**
+     * Removes cached data based on the given key.
+     * @param {string} key - A string that represents the key of the cached value to be removed
+     * @returns {Promise|*}
+     */
+    remove(key) {
+        return new Promise((resolve, reject) => {
+            this.open((err, cache) => {
+                cache.del(key, (err, res) => {
+                    cache.end();
+                    if (err) {
+                        return reject(err);
+                    }
+                    return resolve((typeof res === 'undefined') ? 0 : 1);
+                });
+            });
+        });
+    };
+    /**
+     * Flushes the cached data.
+     * @abstract
+     * @returns {Promise|*}
+     */
+    clear() {
+        return new Promise((resolve, reject) => {
+            this.open((err, cache) => {
+                cache.flush((err) => {
+                    cache.end();
+                    if (err) {
+                        return reject(err);
+                    }
+                    return resolve();
+                });
+            });
+        });
+    }
+
+    getOrDefault(key, getFunc, absoluteExpiration) {
+        return new Promise((resolve, reject) => {
+            this.get(key).then((res)=> {
+                if (typeof res !== 'undefined') {
+                    return resolve(res);
+                }
+                try {
+                    let source = getFunc();
+                    Args.check(typeof source !== 'undefined' && typeof source.then === 'function', 'Invalid argument. Expected a valid promise.');
+                    return source.then((res) => {
+                        if (typeof res === 'undefined') {
+                            return resolve();
+                        }
+                        return this.add(key, res, absoluteExpiration).then(()=> {
+                            return resolve(res);
+                        });
+                    });
+                }
+                catch(err) {
+                    return reject(err);
+                }
+
+            }).catch((err)=> {
+                return reject(err);
+            });
+        });
+    }
+
+}
+
+
 
 if (typeof exports !== 'undefined')
 {
-    module.exports = {
-        /**
-         * @constructs {MemcachedCache}
-         */
-        MemcachedCache:MemcachedCache,
-        /**
-         *
-         * @param {{host:string,port:number,maxKeySize:number,poolSize:number,timeout:number,remove:boolean,ttl:number}|*=} options
-         * @returns MemcachedCache
-         */
-        create: function(options) {
-            return new MemcachedCache(options);
-        }
-    };
+    module.exports.MemcachedCache = MemcachedCache;
+    module.exports.MemcachedCacheStrategy = MemcachedCacheStrategy;
 }

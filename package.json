@@ -1,31 +1,67 @@
 {
-  "name": "most-data-memcached",
-  "version": "1.0.5",
-  "description": "MOST Web Framework Memcached Adapter",
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/kbarbounakis/most-data-memcached.git"
-  },
-  "keywords": [
-    "most",
-    "web",
-    "data",
-    "cached",
-    "memcached"
-  ],
-  "author": "Kyriakos Barbounakis <k.barbounakis@gmail.com>",
-  "license": "BSD3-Clause",
-  "bugs": {
-    "url": "https://github.com/kbarbounakis/most-data-memcached/issues"
-  },
-  "homepage": "https://github.com/kbarbounakis/most-data-memcached",
-  "dependencies": {
-    "bson": "^0.4.8",
-    "memcached": "2.2.1",
-    "winston": "^1.0.1"
-  },
-  "devDependencies": {
-    "mocha": "^2.2.5"
-  }
+    "name": "@themost/memcached",
+    "version": "2.0.1",
+    "description": "MOST Web Framework Memcached Adapter",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kbarbounakis/most-data-memcached.git"
+    },
+    "engines": {
+        "node": ">=6.9.0"
+    },
+    "keywords": [
+        "most",
+        "@themost",
+        "web",
+        "data",
+        "cache",
+        "caching",
+        "memcached"
+    ],
+    "author": "Kyriakos Barbounakis <k.barbounakis@gmail.com>",
+    "license": "BSD3-Clause",
+    "bugs": {
+        "url": "https://github.com/kbarbounakis/most-data-memcached/issues"
+    },
+    "homepage": "https://github.com/kbarbounakis/most-data-memcached",
+    "dependencies": {
+        "@themost/common": "^2.1.4",
+        "memcached": "2.2.1"
+    },
+    "devDependencies": {
+        "@types/memcached": "^2.2.5",
+        "@types/winston": "^2.4.4",
+        "eslint": "^5.4.0",
+        "mocha": "^5.2.0"
+    },
+    "eslintConfig": {
+        "parser": "esprima",
+        "env": {
+            "browser": false,
+            "node": true,
+            "es6": true,
+            "jquery": false
+        },
+        "globals": {
+            "describe": false,
+            "it": false,
+            "before": false,
+            "after": false
+        },
+        "extends": "eslint:recommended",
+        "rules": {
+            "no-console": "warn",
+            "no-invalid-this": "warn",
+            "no-undef": "error",
+            "no-unused-vars": "warn",
+            "no-var": [
+                "error"
+            ],
+            "strict": [
+                2,
+                "never"
+            ]
+        }
+    }
 }
