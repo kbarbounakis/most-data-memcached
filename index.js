@@ -61,7 +61,7 @@ function addInternal(thisCache, key, value, ttl, callback) {
             setValue = null;
         else
             setValue = value;
-        thisCache.set(key, setValue, (ttl || this.options.ttl), (err) => {
+        thisCache.set(key, setValue, (ttl || this.options.maxExpiration), (err) => {
             //if an error occurred
             if (err) {
                 return callback(err);
@@ -275,7 +275,7 @@ class MemcachedCacheStrategy extends ConfigurationStrategy {
         this.options = Object.assign({
             host: "127.0.0.1",
             port: 11211,
-            ttl: 1200
+            maxExpiration: 1200
         }, this.getConfiguration().getSourceAt('settings/memcached'));
     }
 
@@ -289,7 +289,7 @@ class MemcachedCacheStrategy extends ConfigurationStrategy {
     add(key, value, absoluteExpiration) {
         return new Promise((resolve, reject) => {
             this.open((err, cache) => {
-                cache.set(key, value, absoluteExpiration || this.options.ttl, (err, res) => {
+                cache.set(key, value, absoluteExpiration || this.options.maxExpiration, (err, res) => {
                     cache.end();
                     if (err) {
                         return reject(err);

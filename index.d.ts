@@ -1,5 +1,3 @@
-import {DataCacheStrategy} from "../themost/modules/@themost/data/data-cache";
-
 /**
  * @license
  * MOST Web Framework 2.0 Codename Blueshift
@@ -23,7 +21,7 @@ declare interface MemcachedOptions {
 
     remove?: boolean;
 
-    ttl?: number;
+    maxExpiration?: number;
 }
 
 export declare class MemcachedCache {
@@ -71,7 +69,7 @@ export declare class MemcachedCache {
 }
 
 
-export declare class MemcachedCacheStrategy extends DataCacheStrategy {
+export declare class MemcachedCacheStrategy {
 
     options: MemcachedOptions;
 
